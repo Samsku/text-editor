@@ -18,19 +18,32 @@ const db = mysql.createPool({
   database: process.env.DATABASE,
 });
 
-// Signup
 app.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
-  const hash = await bcrypt.hash(password, 10);
   try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
     const [result] = await db.query(
       "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
       [username, email, hash]
     );
+
     res.json({ user_id: result.insertId, username, email });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error creating user" });
+    console.error("Signup error:", err);
+
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({
+        message: "Username or email already exists",
+      });
+    }
+
+    res.status(500).json({ message: "Server error" });
   }
 });
 
