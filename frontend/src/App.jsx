@@ -60,7 +60,7 @@ const App = () => {
     }, 3000);
   };
 
-  // Logout
+  // ...
 
   // Document editing
   const handleEdit = (doc) => {
