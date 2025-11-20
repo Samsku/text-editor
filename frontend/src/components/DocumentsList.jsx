@@ -1,4 +1,5 @@
-const DocumentsList = ({ documents, handleEdit, handleDelete }) => {
+const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
+  console.log(documents);
   return (
     <>
       <h3 style={{ marginTop: "2rem", marginBottom: "1rem" }}>My Documents</h3>

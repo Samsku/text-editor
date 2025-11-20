@@ -16,6 +16,10 @@ const ButtonRow = ({
   const [showAccountModal, setShowAccountModal] = useState(false);
   const handleAccount = () => setShowAccountModal(true);
   const handleLogout = () => {
+    // Clear title and content
+    setTitle("");
+    setContent("");
+    setEditingId(null);
     setUser(null);
     localStorage.removeItem("user");
     addNotification("Logged out successfully");
@@ -166,6 +170,7 @@ const ButtonRow = ({
                   color: "#fff",
                   border: "none",
                   borderRadius: "6px",
+                  cursor: "pointer",
                 }}
               >
                 Logout
@@ -178,6 +183,7 @@ const ButtonRow = ({
                   color: "#fff",
                   border: "none",
                   borderRadius: "6px",
+                  cursor: "pointer",
                 }}
               >
                 Delete Account
@@ -190,6 +196,7 @@ const ButtonRow = ({
                   color: "#fff",
                   border: "none",
                   borderRadius: "6px",
+                  cursor: "pointer",
                 }}
               >
                 Close

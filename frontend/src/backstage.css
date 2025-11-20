@@ -1,0 +1,73 @@
+.backstage-overlay {
+  position: fixed;
+  inset: 0;
+  background: #f3f3f3;
+  z-index: 9999;
+}
+
+.backstage {
+  display: flex;
+  height: 100%;
+}
+
+.backstage-sidebar {
+  width: 240px;
+  background: #2b579a; /* Word blue */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 10px;
+}
+
+.backstage-title {
+  margin-left: 10px;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.backstage-item {
+  margin: 4px 0;
+  padding: 10px 12px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.backstage-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.close-btn {
+  margin-top: auto;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.backstage-content {
+  flex: 1;
+  padding: 40px;
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  color: #333;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.share-btn:hover {
+  background-color: #0073e6; /* change to primary brand color */
+  color: white;
+  transform: scale(1.05);
+}
