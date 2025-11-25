@@ -57,9 +57,11 @@ const App = () => {
   // Save document (HTML content from editorRef)
   const handleSave = async () => {
     if (!title.trim()) return addNotification("Title required", "error");
-    if (!editorRef) return addNotification("Editor not ready", "error");
 
-    const htmlContent = editorRef.getContent();
+    const editorElement = document.querySelector('[contenteditable="true"]');
+    if (!editorElement) return addNotification("Editor is not ready", "error");
+
+    const htmlContent = editorElement.innerHTML;
 
     try {
       const payload = { user_id: user.user_id, title, content: htmlContent };
@@ -77,9 +79,9 @@ const App = () => {
 
       if (!res.ok) throw new Error("Failed to save document");
 
-      // ✅ Keep title as-is
       loadDocuments();
       addNotification("Document saved successfully!");
+      setShowFileMenu(false);
     } catch (err) {
       console.error(err);
       addNotification("Failed to save document", "error");
@@ -88,35 +90,42 @@ const App = () => {
 
   // Save-As always creates new doc
   const handleSaveAs = async () => {
-    if (!editorRef) return addNotification("Editor not ready", "error");
+    if (!title.trim()) return addNotification("Title required", "error");
 
-    const newTitle = prompt("Enter a new title");
-    if (!newTitle || !newTitle.trim())
-      return addNotification("Title required", "error");
+    const editorElement = document.querySelector('[contenteditable="true"]');
+    if (!editorElement) return addNotification("Editor is not ready", "error");
 
-    const htmlContent = editorRef.getContent();
+    const htmlContent = editorElement.innerHTML;
+
+    const newTitle = prompt("Enter a title for the new document:");
+    if (!newTitle) return;
 
     try {
       const payload = {
         user_id: user.user_id,
-        title: newTitle.trim(),
+        title: newTitle,
         content: htmlContent,
       };
 
-      const res = await fetch(`${API_BASE}/documents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        editingId
+          ? `${API_BASE}/documents/${editingId}`
+          : `${API_BASE}/documents`,
+        {
+          method: editingId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      if (!res.ok) throw new Error("Failed to Save As");
+      if (!res.ok) throw new Error("Failed to save document");
 
-      // No clearing here either
       loadDocuments();
-      addNotification("Document saved as new file!");
+      addNotification("Document saved successfully!");
+      setShowFileMenu(false);
     } catch (err) {
       console.error(err);
-      addNotification("Save As failed", "error");
+      addNotification("Failed to save document", "error");
     }
   };
 
