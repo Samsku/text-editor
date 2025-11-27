@@ -11,6 +11,8 @@ const DocumentTitleInput = ({ title, setTitle }) => {
         padding: "10px",
         border: "1px solid #ccc",
         borderRadius: "5px",
+        color: "#fff",
+        background: "#0f1620ff",
       }}
     />
   );

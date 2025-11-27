@@ -90,8 +90,7 @@ const App = () => {
 
   // Save-As always creates new doc
   const handleSaveAs = async () => {
-    if (!title.trim()) return addNotification("Title required", "error");
-
+    if (!content.trim()) return addNotification("Content required", "error");
     const editorElement = document.querySelector('[contenteditable="true"]');
     if (!editorElement) return addNotification("Editor is not ready", "error");
 
@@ -260,6 +259,7 @@ const App = () => {
           background: "#f0f2f5",
           fontFamily: "Arial, sans-serif",
           padding: "1rem",
+          color: "#eee",
         }}
       >
         <SignUpLogin setUser={setUser} addNotification={addNotification} />
@@ -269,23 +269,61 @@ const App = () => {
   }
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+    <div
+      style={{
+        padding: "32px",
+        fontFamily: "Segoe UI, sans-serif",
+        fontSize: "1.15rem",
+        background: "linear-gradient(160deg, #1e1e28 0%, #2a2a38 100%)",
+        minHeight: "100vh",
+        color: "#000000ff",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: "2rem",
+      }}
+    >
       <WelcomeMessage username={user.username} />
 
-      {/* File Menu Button */}
-      <button
-        onClick={() => setShowFileMenu(true)}
-        style={{
-          padding: "6px 14px",
-          marginBottom: "10px",
-          border: "1px solid #ccc",
-          background: "#eee",
-          borderRadius: "6px",
-          cursor: "pointer",
-        }}
-      >
-        File
-      </button>
+      <div style={{ display: "flex" }}>
+        {/* File Menu Button */}
+        <button
+          onClick={() => setShowFileMenu(true)}
+          style={{
+            padding: "10px 20px",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "1rem",
+            fontWeight: "500",
+            transition: "backgound 0.2s ease, transform 0.1s ease",
+            height: "60px",
+            width: "140px",
+            backgroundColor: "#2b579a",
+            marginRight: "1rem",
+          }}
+        >
+          File
+        </button>
+
+        {/* Button Row */}
+        <ButtonRow
+          user={user}
+          setUser={setUser}
+          title={title}
+          setTitle={setTitle}
+          content={content}
+          setContent={setContent}
+          editingId={editingId}
+          setEditingId={setEditingId}
+          editorRef={editorRef}
+          loadDocuments={loadDocuments}
+          API_BASE={API_BASE}
+          addNotification={addNotification}
+          handleSave={handleSave}
+        />
+      </div>
 
       {/* File Menu */}
       <FileMenu
@@ -299,22 +337,6 @@ const App = () => {
         handleDelete={handleDelete}
         onExportHTML={handleExportHTML}
         onExportTXT={handleExportTXT}
-      />
-
-      {/* Button Row */}
-      <ButtonRow
-        user={user}
-        setUser={setUser}
-        title={title}
-        setTitle={setTitle}
-        content={content}
-        setContent={setContent}
-        editingId={editingId}
-        setEditingId={setEditingId}
-        editorRef={editorRef}
-        loadDocuments={loadDocuments}
-        API_BASE={API_BASE}
-        addNotification={addNotification}
       />
 
       {/* Title Input */}
@@ -345,7 +367,20 @@ const App = () => {
           handleDelete={handleDelete}
         />
       ) : (
-        <p style={{ color: "#666", fontStyle: "italic" }}>No documents yet.</p>
+        <p
+          style={{
+            color: "#ffffffff",
+            fontStyle: "italic",
+            background: "rgba(255, 255, 255, 0.4)",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            textAlign: "center",
+            backdropFilter: "blur(4px)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+          }}
+        >
+          No documents yet — create your first one!
+        </p>
       )}
 
       <Notifications notifications={notifications} />

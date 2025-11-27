@@ -129,6 +129,7 @@ export default function FileMenu({
               cursor: "pointer",
               color: "white",
               padding: "5px 10px",
+              borderRadius: "8px",
             }}
           >
             Close
@@ -185,7 +186,7 @@ export default function FileMenu({
               style={{
                 marginBottom: "1.5rem",
                 fontSize: "1.8rem",
-                color: "#333",
+                color: "#f8f8f8ff",
               }}
             >
               Share
