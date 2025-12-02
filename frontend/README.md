@@ -24,7 +24,7 @@
 
 - ### Backend: Node.js, Express
 
-- ### Database: MySQL
+- ### Database: MySQL (XAMMP)
 
 ## Prerequisites
 
@@ -70,7 +70,7 @@ npm install
 npm run dev
 ```
 
-- Open your browser at http://localhost:3000
+- Open your browser at http://localhost:5173
 
 ```sql
 ## Database Schema
