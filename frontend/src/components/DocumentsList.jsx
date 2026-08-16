@@ -44,9 +44,12 @@ const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
           </p>
         )}
 
-        {documents.map((doc) => (
+        {documents.map((doc) => {
+          const documentId = doc.document_id ?? doc.id;
+
+          return (
           <div
-            key={doc.document_id}
+            key={documentId}
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -88,7 +91,7 @@ const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
               </button>
 
               <button
-                onClick={() => handleDelete(doc.document_id)}
+                onClick={() => handleDelete(documentId)}
                 style={{
                   ...cardButton,
                   background: "#d62839",
@@ -98,7 +101,8 @@ const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );

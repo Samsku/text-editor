@@ -1,4 +1,18 @@
 import { useState } from "react";
+
+const normalizeUser = (value) => {
+  if (!value) return null;
+
+  const userId = value.user_id ?? value.id ?? value.userId;
+  if (userId === undefined || userId === null || userId === "") return null;
+
+  return {
+    ...value,
+    user_id: userId,
+    id: value.id ?? userId,
+  };
+};
+
 const ButtonRow = ({
   user,
   setUser,
@@ -8,7 +22,6 @@ const ButtonRow = ({
   setContent,
   editingId,
   setEditingId,
-  editorRef,
   loadDocuments,
   API_BASE,
   addNotification,
@@ -28,8 +41,18 @@ const ButtonRow = ({
 
   // Account deletion
   const handleAccountDelete = async () => {
+    const normalizedUser = normalizeUser(user);
+    const userId = normalizedUser?.user_id ?? normalizedUser?.id;
+
+    if (!userId) {
+      localStorage.removeItem("user");
+      setUser(null);
+      addNotification("User session not found. The saved session was cleared.", "error");
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/users/${user.user_id}`, {
+      const res = await fetch(`${API_BASE}/users/${userId}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete account");

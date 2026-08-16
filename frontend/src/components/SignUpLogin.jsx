@@ -24,8 +24,14 @@ const SignUpLogin = ({ setUser, addNotification }) => {
         return addNotification(data.message, "error");
       }
 
-      setUser(data);
-      localStorage.setItem("user", JSON.stringify(data));
+      const normalizedUser = {
+        ...data,
+        user_id: data.user_id ?? data.id,
+        id: data.id ?? data.user_id,
+      };
+
+      setUser(normalizedUser);
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
       addNotification("Signup successful!");
     } catch (err) {
       console.error(err);
@@ -44,8 +50,14 @@ const SignUpLogin = ({ setUser, addNotification }) => {
       });
       const data = await res.json();
       if (res.status !== 200) return addNotification(data.message, "error");
-      setUser(data);
-      localStorage.setItem("user", JSON.stringify(data));
+      const normalizedUser = {
+        ...data,
+        user_id: data.user_id ?? data.id,
+        id: data.id ?? data.user_id,
+      };
+
+      setUser(normalizedUser);
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
       addNotification("Login successful!");
     } catch (err) {
       console.error(err);

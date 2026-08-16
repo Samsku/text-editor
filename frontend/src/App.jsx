@@ -1,5 +1,3 @@
-import "@abduljebar/text-editor/dist/index.css";
-import { TextEditor } from "@abduljebar/text-editor";
 import { useState, useEffect } from "react";
 import SignUpLogin from "./components/SignUpLogin";
 import WelcomeMessage from "./components/WelcomeMessage";
@@ -8,18 +6,36 @@ import DocumentTitleInput from "./components/DocumentTitleInput";
 import DocumentsList from "./components/DocumentsList";
 import Notifications from "./components/Notifications";
 import FileMenu from "./components/FileMenu";
+import RichTextEditor from "./components/RichTextEditor";
 
 const API_BASE = "http://localhost:3000";
 
+const normalizeUser = (value) => {
+  if (!value || (!value.user_id && !value.id)) return null;
+
+  const userId = value.user_id ?? value.id;
+  if (userId === undefined || userId === null || userId === "") return null;
+
+  return {
+    ...value,
+    user_id: userId,
+    id: value.id ?? userId,
+  };
+};
+
 const App = () => {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user")) || null
-  );
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("user");
+      return normalizeUser(saved ? JSON.parse(saved) : null);
+    } catch {
+      return null;
+    }
+  });
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [documents, setDocuments] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [editorRef, setEditorRef] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showFileMenu, setShowFileMenu] = useState(false);
 
@@ -28,17 +44,18 @@ const App = () => {
     if (user) loadDocuments();
   }, [user]);
 
-  useEffect(() => {
-    if (!editorRef) return;
-    console.log("Editor finally ready:", editorRef);
-  }, [editorRef]);
-
   // Load documents from API
   const loadDocuments = async () => {
     try {
-      const res = await fetch(`${API_BASE}/users/${user.user_id}/documents`);
+      const userId = user?.user_id ?? user?.id;
+      const res = await fetch(`${API_BASE}/users/${userId}/documents`);
       const data = await res.json();
-      setDocuments(data);
+      const normalized = (Array.isArray(data) ? data : []).map((doc) => ({
+        ...doc,
+        id: doc.id ?? doc.document_id,
+        document_id: doc.document_id ?? doc.id,
+      }));
+      setDocuments(normalized);
     } catch (err) {
       console.error(err);
       addNotification("Failed to load documents", "error");
@@ -58,10 +75,7 @@ const App = () => {
   const handleSave = async () => {
     if (!title.trim()) return addNotification("Title required", "error");
 
-    const editorElement = document.querySelector('[contenteditable="true"]');
-    if (!editorElement) return addNotification("Editor is not ready", "error");
-
-    const htmlContent = editorElement.innerHTML;
+    const htmlContent = content || "";
 
     try {
       const payload = { user_id: user.user_id, title, content: htmlContent };
@@ -91,10 +105,8 @@ const App = () => {
   // Save-As always creates new doc
   const handleSaveAs = async () => {
     if (!content.trim()) return addNotification("Content required", "error");
-    const editorElement = document.querySelector('[contenteditable="true"]');
-    if (!editorElement) return addNotification("Editor is not ready", "error");
 
-    const htmlContent = editorElement.innerHTML;
+    const htmlContent = content || "";
 
     const newTitle = prompt("Enter a title for the new document:");
     if (!newTitle) return;
@@ -129,13 +141,22 @@ const App = () => {
   };
 
   // Edit existing doc
-  const handleEdit = (doc) => {
-    setEditingId(doc.document_id);
+  const handleEdit = async (doc) => {
+    const documentId = doc.id ?? doc.document_id;
+    setEditingId(documentId);
     setTitle(doc.title);
+    setContent(doc.content || "");
 
-    // Load HTML into editor
-    if (editorRef) {
-      editorRef.setContent(doc.content);
+    if (!doc.content) {
+      try {
+        const res = await fetch(`${API_BASE}/documents/${documentId}`);
+        if (!res.ok) throw new Error("Failed to fetch document");
+
+        const data = await res.json();
+        setContent(data.content || "");
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
@@ -317,7 +338,6 @@ const App = () => {
           setContent={setContent}
           editingId={editingId}
           setEditingId={setEditingId}
-          editorRef={editorRef}
           loadDocuments={loadDocuments}
           API_BASE={API_BASE}
           addNotification={addNotification}
@@ -343,20 +363,10 @@ const App = () => {
       <DocumentTitleInput title={title} setTitle={setTitle} />
 
       {/* Text Editor */}
-      <TextEditor
-        ref={(instance) => {
-          if (!instance) return;
-          console.log("EDITOR INSTANCE:", instance);
-          setEditorRef(instance);
-        }}
-        height="min-h-[400px]"
-        initialContent={
-          editingId
-            ? documents.find((d) => d.document_id === editingId)?.content || ""
-            : ""
-        }
-        showButtons={false}
-        onChange={setContent}
+      <RichTextEditor
+        key={editingId ?? "new-document"}
+        value={content}
+        onChange={(html) => setContent(html)}
       />
 
       {/* Documents List */}

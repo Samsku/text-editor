@@ -16,7 +16,82 @@ const db = mysql.createPool({
   user: process.env.USER,
   password: process.env.PASSWORD,
   database: process.env.DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
+
+const ensureDatabase = async () => {
+  try {
+    const connection = await mysql.createConnection({
+      host: process.env.HOST,
+      user: process.env.USER,
+      password: process.env.PASSWORD,
+    });
+
+    await connection.query(
+      `CREATE DATABASE IF NOT EXISTS \`${process.env.DATABASE}\`;`
+    );
+    await connection.end();
+
+    await db.query(`CREATE TABLE IF NOT EXISTS users (
+      user_id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(50) NOT NULL UNIQUE,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    await db.query(`CREATE TABLE IF NOT EXISTS documents (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      content LONGTEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    )`);
+  } catch (err) {
+    console.error("DB init failed:", err);
+  }
+};
+
+const getDocumentIdColumn = async () => {
+  try {
+    const [columns] = await db.query("SHOW COLUMNS FROM documents");
+    const fields = columns.map((column) => column.Field);
+    return fields.includes("document_id") ? "document_id" : "id";
+  } catch (err) {
+    return "id";
+  }
+};
+
+const getUserIdColumn = async () => {
+  try {
+    const [columns] = await db.query("SHOW COLUMNS FROM users");
+    const fields = columns.map((column) => column.Field);
+    if (fields.includes("user_id")) return "user_id";
+    if (fields.includes("id")) return "id";
+    return "id";
+  } catch (err) {
+    return "id";
+  }
+};
+
+const getUserIdColumns = async () => {
+  try {
+    const [columns] = await db.query("SHOW COLUMNS FROM users");
+    const fields = columns.map((column) => column.Field);
+    const candidates = [];
+    if (fields.includes("user_id")) candidates.push("user_id");
+    if (fields.includes("id")) candidates.push("id");
+    return candidates.length > 0 ? candidates : ["id"];
+  } catch (err) {
+    return ["id"];
+  }
+};
+
+await ensureDatabase();
 
 app.post("/signup", async (req, res) => {
   try {
@@ -33,7 +108,8 @@ app.post("/signup", async (req, res) => {
       [username, email, hash]
     );
 
-    res.json({ user_id: result.insertId, username, email });
+    const userId = result.insertId;
+    res.json({ user_id: userId, id: userId, username, email });
   } catch (err) {
     console.error("Signup error:", err);
 
@@ -65,8 +141,11 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    const userId = user.user_id ?? user.id ?? user.userId;
+
     res.json({
-      user_id: user.user_id,
+      user_id: userId,
+      id: userId,
       username: user.username,
       email: user.email,
     });
@@ -79,13 +158,30 @@ app.post("/login", async (req, res) => {
 // Delete user
 app.delete("/users/:id", async (req, res) => {
   const userId = req.params.id;
+
   try {
-    const [rows] = await db.query("DELETE FROM users WHERE user_id = ?", [
-      userId,
-    ]);
+    const idColumns = await getUserIdColumns();
+    const whereClause = idColumns.map((column) => `${column} = ?`).join(" OR ");
+    const params = idColumns.map(() => userId);
+
+    const [checkRows] = await db.query(
+      `SELECT * FROM users WHERE ${whereClause}`,
+      params
+    );
+
+    if (checkRows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const [rows] = await db.query(
+      `DELETE FROM users WHERE ${whereClause}`,
+      params
+    );
+
     if (rows.affectedRows === 0) {
       return res.status(404).json({ message: "User not found" });
     }
+
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     console.error(err);
@@ -108,6 +204,28 @@ app.post("/documents", async (req, res) => {
   }
 });
 
+// Get a single document by id
+app.get("/documents/:id", async (req, res) => {
+  const documentId = req.params.id;
+  const pkColumn = await getDocumentIdColumn();
+
+  try {
+    const [rows] = await db.query(
+      `SELECT * FROM documents WHERE ${pkColumn} = ?`,
+      [documentId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching document" });
+  }
+});
+
 // Get all documents for specific user
 app.get("/users/:id/documents", async (req, res) => {
   const userId = req.params.id;
@@ -126,9 +244,11 @@ app.get("/users/:id/documents", async (req, res) => {
 app.put("/documents/:id", async (req, res) => {
   const documentId = req.params.id;
   const { title, content } = req.body;
+  const pkColumn = await getDocumentIdColumn();
+
   try {
     await db.query(
-      "UPDATE documents SET title = ?, content = ? WHERE document_id = ?",
+      `UPDATE documents SET title = ?, content = ? WHERE ${pkColumn} = ?`,
       [title, content, documentId]
     );
     res.json({ message: "Document updated" });
@@ -141,8 +261,10 @@ app.put("/documents/:id", async (req, res) => {
 // Delete document
 app.delete("/documents/:id", async (req, res) => {
   const documentId = req.params.id;
+  const pkColumn = await getDocumentIdColumn();
+
   try {
-    await db.query("DELETE FROM documents WHERE document_id = ?", [documentId]);
+    await db.query(`DELETE FROM documents WHERE ${pkColumn} = ?`, [documentId]);
     res.json({ message: "Document deleted" });
   } catch (err) {
     console.error(err);
