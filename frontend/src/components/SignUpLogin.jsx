@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+// Component for signup/login
 const SignUpLogin = ({ setUser, addNotification }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,14 +25,8 @@ const SignUpLogin = ({ setUser, addNotification }) => {
         return addNotification(data.message, "error");
       }
 
-      const normalizedUser = {
-        ...data,
-        user_id: data.user_id ?? data.id,
-        id: data.id ?? data.user_id,
-      };
-
-      setUser(normalizedUser);
-      localStorage.setItem("user", JSON.stringify(normalizedUser));
+      setUser(data);
+      localStorage.setItem("user", JSON.stringify(data));
       addNotification("Signup successful!");
     } catch (err) {
       console.error(err);
@@ -50,14 +45,8 @@ const SignUpLogin = ({ setUser, addNotification }) => {
       });
       const data = await res.json();
       if (res.status !== 200) return addNotification(data.message, "error");
-      const normalizedUser = {
-        ...data,
-        user_id: data.user_id ?? data.id,
-        id: data.id ?? data.user_id,
-      };
-
-      setUser(normalizedUser);
-      localStorage.setItem("user", JSON.stringify(normalizedUser));
+      setUser(data);
+      localStorage.setItem("user", JSON.stringify(data));
       addNotification("Login successful!");
     } catch (err) {
       console.error(err);

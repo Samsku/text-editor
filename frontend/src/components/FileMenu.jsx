@@ -22,6 +22,9 @@ import {
   WhatsappIcon,
 } from "react-share";
 
+/**
+Filemenu for different actions such as saving and exporting the document 
+ */
 export default function FileMenu({
   isOpen,
   onClose,
@@ -34,6 +37,7 @@ export default function FileMenu({
   onExportHTML,
   onExportTXT,
 }) {
+  // State for dialog and share windows
   const [dialogOpen, setDialogOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -51,6 +55,7 @@ export default function FileMenu({
     handleEdit(doc);
   };
 
+  // Render the menu
   return (
     <div className="backstage-overlay">
       <div className="backstage">

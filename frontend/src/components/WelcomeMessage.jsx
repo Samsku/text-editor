@@ -1,3 +1,4 @@
+// Component for the user-specific welcome-message
 const WelcomeMessage = ({ username }) => {
   return (
     <h1

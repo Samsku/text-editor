@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+// Button styles
 const buttonStyle = {
   padding: "8px 12px",
   border: "1px solid #d1d5db",
@@ -10,6 +11,9 @@ const buttonStyle = {
   fontWeight: 600,
 };
 
+/*
+Component for the editor itself
+*/
 const RichTextEditor = ({ value = "", onChange }) => {
   const editorRef = useRef(null);
 

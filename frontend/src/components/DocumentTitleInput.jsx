@@ -1,3 +1,6 @@
+/*
+Component for the input field for document title
+*/
 const DocumentTitleInput = ({ title, setTitle }) => {
   return (
     <input

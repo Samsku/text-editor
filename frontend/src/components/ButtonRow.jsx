@@ -1,18 +1,5 @@
 import { useState } from "react";
 
-const normalizeUser = (value) => {
-  if (!value) return null;
-
-  const userId = value.user_id ?? value.id ?? value.userId;
-  if (userId === undefined || userId === null || userId === "") return null;
-
-  return {
-    ...value,
-    user_id: userId,
-    id: value.id ?? userId,
-  };
-};
-
 const ButtonRow = ({
   user,
   setUser,
@@ -41,10 +28,7 @@ const ButtonRow = ({
 
   // Account deletion
   const handleAccountDelete = async () => {
-    const normalizedUser = normalizeUser(user);
-    const userId = normalizedUser?.user_id ?? normalizedUser?.id;
-
-    if (!userId) {
+    if (!user?.id) {
       localStorage.removeItem("user");
       setUser(null);
       addNotification("User session not found. The saved session was cleared.", "error");
@@ -52,7 +36,7 @@ const ButtonRow = ({
     }
 
     try {
-      const res = await fetch(`${API_BASE}/users/${userId}`, {
+      const res = await fetch(`${API_BASE}/users/${user.id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete account");
@@ -65,6 +49,7 @@ const ButtonRow = ({
     }
   };
 
+  // Button styles
   const buttonBase = {
     padding: "10px 20px",
     color: "white",
@@ -78,6 +63,7 @@ const ButtonRow = ({
     width: "140px",
   };
 
+  // Smaller button styles
   const buttonBaseSmall = {
     padding: "8px 16px",
     color: "white",
@@ -89,6 +75,7 @@ const ButtonRow = ({
     transition: "background 0.2s ease, transform 0.1s ease",
   };
 
+  // Render the row of buttons
   return (
     <>
       <div

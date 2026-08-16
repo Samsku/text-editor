@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(express.json()); // For parsing JSON
 app.use(cors()); // Enable CORS
 
 // MySQL pool
@@ -35,7 +35,7 @@ const ensureDatabase = async () => {
     await connection.end();
 
     await db.query(`CREATE TABLE IF NOT EXISTS users (
-      user_id INT AUTO_INCREMENT PRIMARY KEY,
+      id INT AUTO_INCREMENT PRIMARY KEY,
       username VARCHAR(50) NOT NULL UNIQUE,
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
@@ -49,67 +49,36 @@ const ensureDatabase = async () => {
       content LONGTEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
   } catch (err) {
     console.error("DB init failed:", err);
   }
 };
 
-const getDocumentIdColumn = async () => {
-  try {
-    const [columns] = await db.query("SHOW COLUMNS FROM documents");
-    const fields = columns.map((column) => column.Field);
-    return fields.includes("document_id") ? "document_id" : "id";
-  } catch (err) {
-    return "id";
-  }
-};
 
-const getUserIdColumn = async () => {
-  try {
-    const [columns] = await db.query("SHOW COLUMNS FROM users");
-    const fields = columns.map((column) => column.Field);
-    if (fields.includes("user_id")) return "user_id";
-    if (fields.includes("id")) return "id";
-    return "id";
-  } catch (err) {
-    return "id";
-  }
-};
-
-const getUserIdColumns = async () => {
-  try {
-    const [columns] = await db.query("SHOW COLUMNS FROM users");
-    const fields = columns.map((column) => column.Field);
-    const candidates = [];
-    if (fields.includes("user_id")) candidates.push("user_id");
-    if (fields.includes("id")) candidates.push("id");
-    return candidates.length > 0 ? candidates : ["id"];
-  } catch (err) {
-    return ["id"];
-  }
-};
-
+// Make sure the database is initialized
 await ensureDatabase();
 
+// Signup
 app.post("/signup", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    // Check if all fields are present
     if (!username || !email || !password) {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    const hash = await bcrypt.hash(password, 10);
-
+    const hash = await bcrypt.hash(password, 10); // Encrypt the password
+    // Create a new user in the database
     const [result] = await db.query(
       "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
       [username, email, hash]
     );
 
     const userId = result.insertId;
-    res.json({ user_id: userId, id: userId, username, email });
+    res.json({ id: userId, username, email });
   } catch (err) {
     console.error("Signup error:", err);
 
@@ -127,6 +96,7 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
+    // Check if the email exists in the database
     const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
       email,
     ]);
@@ -137,15 +107,12 @@ app.post("/login", async (req, res) => {
     const user = rows[0];
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
-    if (!isPasswordValid) {
+    if (!isPasswordValid) { // Check if the password is correct
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const userId = user.user_id ?? user.id ?? user.userId;
-
     res.json({
-      user_id: userId,
-      id: userId,
+      id: user.id,
       username: user.username,
       email: user.email,
     });
@@ -160,25 +127,14 @@ app.delete("/users/:id", async (req, res) => {
   const userId = req.params.id;
 
   try {
-    const idColumns = await getUserIdColumns();
-    const whereClause = idColumns.map((column) => `${column} = ?`).join(" OR ");
-    const params = idColumns.map(() => userId);
-
-    const [checkRows] = await db.query(
-      `SELECT * FROM users WHERE ${whereClause}`,
-      params
+    // Try to delete the user from the database
+    const [result] = await db.query(
+      `DELETE FROM users WHERE id = ?`,
+      [userId]
     );
 
-    if (checkRows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const [rows] = await db.query(
-      `DELETE FROM users WHERE ${whereClause}`,
-      params
-    );
-
-    if (rows.affectedRows === 0) {
+    // Check if the user was deleted successfully
+    if (result.affectedRows === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -193,6 +149,7 @@ app.delete("/users/:id", async (req, res) => {
 app.post("/documents", async (req, res) => {
   const { user_id, title, content } = req.body;
   try {
+    // Create a new document in the database
     const [result] = await db.query(
       "INSERT INTO documents (user_id, title, content) VALUES (?, ?, ?)",
       [user_id, title, content]
@@ -207,11 +164,11 @@ app.post("/documents", async (req, res) => {
 // Get a single document by id
 app.get("/documents/:id", async (req, res) => {
   const documentId = req.params.id;
-  const pkColumn = await getDocumentIdColumn();
 
   try {
+    // Fetch the document from the database
     const [rows] = await db.query(
-      `SELECT * FROM documents WHERE ${pkColumn} = ?`,
+      `SELECT * FROM documents WHERE id = ?`,
       [documentId]
     );
 
@@ -244,11 +201,11 @@ app.get("/users/:id/documents", async (req, res) => {
 app.put("/documents/:id", async (req, res) => {
   const documentId = req.params.id;
   const { title, content } = req.body;
-  const pkColumn = await getDocumentIdColumn();
 
   try {
+    // Update the document in the databse with the new data
     await db.query(
-      `UPDATE documents SET title = ?, content = ? WHERE ${pkColumn} = ?`,
+      `UPDATE documents SET title = ?, content = ? WHERE id = ?`,
       [title, content, documentId]
     );
     res.json({ message: "Document updated" });
@@ -261,10 +218,10 @@ app.put("/documents/:id", async (req, res) => {
 // Delete document
 app.delete("/documents/:id", async (req, res) => {
   const documentId = req.params.id;
-  const pkColumn = await getDocumentIdColumn();
 
   try {
-    await db.query(`DELETE FROM documents WHERE ${pkColumn} = ?`, [documentId]);
+    // Try to delete the document from the database with the given id
+    await db.query(`DELETE FROM documents WHERE id = ?`, [documentId]);
     res.json({ message: "Document deleted" });
   } catch (err) {
     console.error(err);
@@ -272,7 +229,7 @@ app.delete("/documents/:id", async (req, res) => {
   }
 });
 
-// Start server (port 3000)
+// Start server in port 3000
 app.listen(3000, () => {
   console.log("Server running on port 3000");
 });

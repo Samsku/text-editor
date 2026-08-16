@@ -8,34 +8,27 @@ import Notifications from "./components/Notifications";
 import FileMenu from "./components/FileMenu";
 import RichTextEditor from "./components/RichTextEditor";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://localhost:3000"; // Backend API URL
 
-const normalizeUser = (value) => {
-  if (!value || (!value.user_id && !value.id)) return null;
-
-  const userId = value.user_id ?? value.id;
-  if (userId === undefined || userId === null || userId === "") return null;
-
-  return {
-    ...value,
-    user_id: userId,
-    id: value.id ?? userId,
-  };
-};
-
+// The app component
 const App = () => {
+  // Get the user from localStorage (or null if not found)
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem("user");
-      return normalizeUser(saved ? JSON.parse(saved) : null);
+      return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
+
+  // Document state
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [documents, setDocuments] = useState([]);
   const [editingId, setEditingId] = useState(null);
+
+  // Notification and file menu state
   const [notifications, setNotifications] = useState([]);
   const [showFileMenu, setShowFileMenu] = useState(false);
 
@@ -47,22 +40,16 @@ const App = () => {
   // Load documents from API
   const loadDocuments = async () => {
     try {
-      const userId = user?.user_id ?? user?.id;
-      const res = await fetch(`${API_BASE}/users/${userId}/documents`);
+      const res = await fetch(`${API_BASE}/users/${user.id}/documents`);
       const data = await res.json();
-      const normalized = (Array.isArray(data) ? data : []).map((doc) => ({
-        ...doc,
-        id: doc.id ?? doc.document_id,
-        document_id: doc.document_id ?? doc.id,
-      }));
-      setDocuments(normalized);
+      setDocuments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       addNotification("Failed to load documents", "error");
     }
   };
 
-  // Notifications
+  // Function for adding notifications
   const addNotification = (message, type = "success") => {
     const id = crypto.randomUUID();
     setNotifications((prev) => [...prev, { id, message, type }]);
@@ -71,14 +58,14 @@ const App = () => {
     }, 3000);
   };
 
-  // Save document (HTML content from editorRef)
+  // Save document
   const handleSave = async () => {
     if (!title.trim()) return addNotification("Title required", "error");
 
     const htmlContent = content || "";
 
     try {
-      const payload = { user_id: user.user_id, title, content: htmlContent };
+      const payload = { user_id: user.id, title, content: htmlContent };
 
       const res = await fetch(
         editingId
@@ -113,7 +100,7 @@ const App = () => {
 
     try {
       const payload = {
-        user_id: user.user_id,
+        user_id: user.id,
         title: newTitle,
         content: htmlContent,
       };
@@ -142,14 +129,13 @@ const App = () => {
 
   // Edit existing doc
   const handleEdit = async (doc) => {
-    const documentId = doc.id ?? doc.document_id;
-    setEditingId(documentId);
+    setEditingId(doc.id);
     setTitle(doc.title);
     setContent(doc.content || "");
 
     if (!doc.content) {
       try {
-        const res = await fetch(`${API_BASE}/documents/${documentId}`);
+        const res = await fetch(`${API_BASE}/documents/${doc.id}`);
         if (!res.ok) throw new Error("Failed to fetch document");
 
         const data = await res.json();

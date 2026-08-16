@@ -1,3 +1,4 @@
+// Component to render notifications to the user
 const Notifications = ({ notifications }) => {
   return (
     <div

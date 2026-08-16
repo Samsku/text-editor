@@ -1,7 +1,7 @@
 const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
-  console.log(documents);
-  documents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  documents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Sort by date
 
+  // Button styles
   const cardButton = {
     padding: "6px 14px",
     border: "none",
@@ -12,6 +12,7 @@ const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
     transition: "0.2s ease",
   };
 
+  // Render the list of documents
   return (
     <>
       <h3
@@ -45,7 +46,7 @@ const DocumentsList = ({ documents = [], handleEdit, handleDelete }) => {
         )}
 
         {documents.map((doc) => {
-          const documentId = doc.document_id ?? doc.id;
+          const documentId = doc.id;
 
           return (
           <div
